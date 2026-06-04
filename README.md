@@ -2,7 +2,7 @@
 
 ## 相关原理
 
-The pruning methodology is inspired by the following research papers:
+该修剪方法的灵感来源于以下研究论文：
 
 - **[Learning Efficient Convolutional Networks Through Network Slimming](https://arxiv.org/abs/1708.06519)**
 - **[Pruning Filters for Efficient ConvNets](https://arxiv.org/abs/1608.08710)**
@@ -32,6 +32,7 @@ BN层的具体操作有两部分：
 通过在loss函数中添加gamma的L1正则约束，可以实现gamma的稀疏化。
 
 ![](assets/3.jpg)
+
 上面损失函数L右边第一项是原始的损失函数，第二项是约束，其中g(s) = |s|，λ是正则系数，根据数据集调整，实际训练的时候，就是在优化L最小，依据梯度下降算法：
 
 𝐿′=∑𝑙′+𝜆∑𝑔′(𝛾)=∑𝑙′+𝜆∑|𝛾|′=∑𝑙′+𝜆∑𝛾∗𝑠𝑖𝑔𝑛(𝛾)
@@ -65,8 +66,8 @@ if self.sr is not None:
 
 此库包含以下模块:
 
-- **官方 YOLOv8 代码库**
-- Custom scripts: `train.py`, `train_sparsity.py`, `prune.py`, `finetune.py`, 和 `val.py`.
+- 官方 YOLOv8 代码库
+- 自定义脚本: `train.py`, `train_sparsity.py`, `prune.py`, `finetune.py`, 和 `val.py`.
 
 因为数据集使用的是[NWPU](https://www.kaggle.com/datasets/huynhphucthinhne/nwpu-vhr-10-yolo)，不在官方cfg中，所以要自己写一个`.yaml`文件，放在`ultralytics/cfg/datasets`中。
 
@@ -186,10 +187,18 @@ model.train(data="ultralytics/cfg/datasets/NWPU.yaml", epochs=200, finetune=True
 | 50%             | 7.5M           | 20.2       | 0.969     | 1.5ms               |
 
 ![模型剪枝前的PR](assets/original/PR_curve.png)
+**模型剪枝前的PR曲线**
 ![模型剪枝后的PR](assets/pruned/PR_curve.png)
+**模型剪枝后的PR曲线**
+
+------
 
 ![模型剪枝前的混淆矩阵](assets/original/confusion_matrix_normalized.png)
+**模型剪枝前的混淆矩阵**
 ![模型剪枝后的混淆矩阵](assets/pruned/confusion_matrix_normalized.png)
+**模型剪枝后的混淆矩阵**
+
+------
 
 ### 模型剪枝前后目标检测对比
 ![模型剪枝前](assets/original/val_batch0_pred.jpg)
