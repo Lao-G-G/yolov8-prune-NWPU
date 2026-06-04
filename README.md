@@ -183,8 +183,8 @@ model.train(data="ultralytics/cfg/datasets/NWPU.yaml", epochs=200, finetune=True
 
 | **Prune Ratio** | **Parameters** | **GFLOPs** | **mAP50** | **Inference Speed** |
 | --------------- | -------------- | ---------- | --------- | ------------------- |
-| 0%              | 11.1M          | 28.4       | 0.964     | 1.6ms               |
-| 50%             | 7.5M           | 20.2       | 0.969     | 1.5ms               |
+| 50%             | 9.5M           | 12.1       | 0.894     | 3.9ms               |
+| 0%              | 25.9M          | 39.7       | 0.951     | 4.2ms               |
 
 ![模型剪枝前的PR](assets/original/PR_curve.png)
 **模型剪枝前的PR曲线**
