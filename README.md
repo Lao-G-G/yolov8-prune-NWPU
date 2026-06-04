@@ -1,49 +1,42 @@
-# YOLOv8 Pruning
+# YOLOv8 模型剪枝
 
-**Original Content. Please credit the source when referencing.**
-
-------
-
-## Related Principles
+## 相关原理
 
 The pruning methodology is inspired by the following research papers:
 
-- **Learning Efficient Convolutional Networks Through Network Slimming**
-- **Pruning Filters for Efficient ConvNets**
+- **[Learning Efficient Convolutional Networks Through Network Slimming](https://arxiv.org/abs/1708.06519)**
+- **[Pruning Filters for Efficient ConvNets](https://arxiv.org/abs/1608.08710)**
 
 ------
 
-## Pruning Methodology
+## 剪枝方法
 
-The pruning process is based on the **gamma coefficient** in Batch Normalization (BN) layers.
+基于BN层系数gamma剪枝。
 
-In a **Conv-BN-Activation** module, the BN layer is responsible for channel scaling, as shown below:
+在一个卷积-BN-激活模块中，BN层可以实现通道的缩放。如下：
 
 ![](assets/BN.jpg)
 
-### BN Layer Operations
+### BN层操作
 
-The BN layer performs two main operations:
+BN层的具体操作有两部分：
 
-1. **Normalization:** Adjusts the input to have zero mean and unit variance.
+1. **归一化** 
 
-2. **Linear Transformation:** Applies a scaling factor `gamma` and a shift `beta`.
+2. **线性变换** 
 
    ![](assets/2.jpg)
 
-When the `gamma` coefficient is very small, the corresponding activations become negligible. These low-activation outputs can be safely pruned, effectively implementing channel pruning in the BN layer.
+当系数gamma很小时候，对应的激活（Zout）会相应很小。这些响应很小的输出可以裁剪掉，这样就实现了bn层的通道剪枝（剪枝的本质是看每个通道的重要性，这只是判断通道重要性的一个方法）。
 
-By adding an **L1 regularization constraint** to the `gamma` coefficients in the loss function, sparsity can be enforced:
+通过在loss函数中添加gamma的L1正则约束，可以实现gamma的稀疏化。
 
 ![](assets/3.jpg)
-
-### Backpropagation Adjustment
-
-During backpropagation, gradients for BN layer weights are modified as follows:
+上面损失函数L右边第一项是原始的损失函数，第二项是约束，其中g(s) = |s|，λ是正则系数，根据数据集调整，实际训练的时候，就是在优化L最小，依据梯度下降算法：
 
 𝐿′=∑𝑙′+𝜆∑𝑔′(𝛾)=∑𝑙′+𝜆∑|𝛾|′=∑𝑙′+𝜆∑𝛾∗𝑠𝑖𝑔𝑛(𝛾)
 
-This modification ensures that sparsity is enforced during training by adding the following code snippet:
+所以只需要在BP传播时候，在BN层权重乘以权重的符号函数输出和系数即可，对应添加如下代码:
 
 ```
 # ===================== Sparsity Training =========================
@@ -60,149 +53,164 @@ if self.sr is not None:
 # ==================================================================
 ```
 
-In the above implementation, certain `gamma` coefficients in BN layers are excluded from pruning, particularly in Bottleneck modules with shortcuts, to ensure tensor dimensions remain consistent.
+这里并未对所有BN层gamma进行约束，对C3结构中的Bottleneck结构中有shortcut的层不进行剪枝，主要是为了保持tensor维度可以加：
 
 ![](assets/c2f.jpg)
 
 ------
 
-## Usage Instructions
+## 使用指南
 
-### Repository Overview
+### 总览
 
-This repository contains:
+此库包含以下模块:
 
-- **Official YOLOv8 Codebase**
-- Custom scripts: `train.py`, `train_sparsity.py`, `prune.py`, `finetune.py`, and `val.py`.
+- **官方 YOLOv8 代码库**
+- Custom scripts: `train.py`, `train_sparsity.py`, `prune.py`, `finetune.py`, 和 `val.py`.
 
-The pruning process was tested on a single-category detection dataset, but the methodology applies to other datasets as well.
+因为数据集使用的是[NWPU](https://www.kaggle.com/datasets/huynhphucthinhne/nwpu-vhr-10-yolo)，不在官方cfg中，所以要自己写一个`.yaml`文件，放在`ultralytics/cfg/datasets`中。
 
 ------
 
-### Step 1: Standard Training
+### 1. 常规训练
 
-Use `train-normal.py` for normal training:
+运行 `train-normal.py` 进行常规训练:
 
 ```
 from ultralytics import YOLO
 
-model = YOLO("weights/yolov8s.pt")  # Pretrained weights
+model = YOLO("weights/yolov8m.pt")  # Pretrained weights
 # Set L1 regularization coefficient to 0
 model.train(
     sr=0, 
-    data="ultralytics/cfg/datasets/coco.yaml",  # Dataset configuration
-    epochs=200, 
+    data="ultralytics/cfg/datasets/NWPU.yaml",  # Dataset configuration
+    epochs=150, 
     project='.', 
-    name='runs/train-norm', 
-    batch=48, 
+    name='runs/train-normal', 
+    batch=24, 
     device=0
 )
 
 ```
 
-#### Notes:
+#### 注意:
 
-1. Place the pretrained weights in the `weights` folder.
-2. Configure the dataset YAML file (refer to `coco128.yaml` in the official YOLOv8 repository).
-3. Set `sr=0` to disable L1 regularization during standard training.
+1. 将预训练权重放置在 `weights` 文件夹中。
+2. 配置数据集 YAML 文件（请参考 YOLOv8 官方仓库中的 `coco128.yaml`）。
+3. 设置 `sr=0` 以在标准训练期间禁用 L1 正则化。
 
 ------
 
-### Step 2: Sparsity Training
+### 2. 稀疏训练
 
-Use `train_sparsity.py` to enforce sparsity:
+运行 `train_sparsity.py` 进行稀疏训练:
 
 ```
 from ultralytics import YOLO
 
-model = YOLO("runs/train-norm/weights/best.pt")  # Load the best model from normal training
+model = YOLO("runs/train-normal/weights/best.pt")  # Load the best model from normal training
 # Set L1 regularization coefficient
 model.train(
     sr=1e-2, 
     lr0=1e-3,
-    data="ultralytics/cfg/datasets/coco.yaml", 
+    data="ultralytics/cfg/datasets/NWPU.yaml", 
     epochs=50, 
     patience=50, 
     project='.', 
     name='runs/train-sparsity', 
-    batch=48, 
+    batch=24, 
     device=0
 )
 ```
 
-#### Notes:
+#### 注意:
 
-1. Set a non-zero `sr` value to enforce sparsity. Larger `sr` values increase pruning strength.
+1. 设置一个非零的 `sr` 值以强制稀疏性。更大的 `sr` 值会增强剪枝强度。
 
-2. Use `vis-bn-weight.py` to visualize the gamma distribution before and after sparsity training.
+2. 使用 `vis-bn-weight.py` 可视化稀疏训练前后gamma分布的情况。
 
-   ![](assets/dist-norm.jpg)
+   ![常规训练](assets/bn-weight-distribution-normal.jpg)
 
-   ![](assets/dist-sparse.png)
+   ![稀疏训练](assets/bn-weight-distribution-sparsity.jpg)
 
 ------
 
-### Step 3: Pruning
+### 3. 剪枝
 
-Use `prune.py` to prune the model:
+运行 `prune.py` 对模型剪枝:
 
 ```
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, default=ROOT / 'ultralytics/cfg/datasets/coco.yaml', help='Dataset YAML path')
+    parser.add_argument('--data', type=str, default=ROOT / 'ultralytics/cfg/datasets/NWPU.yaml', help='Dataset YAML path')
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'runs/train-sparsity/weights/last.pt', help='Model weights path')
     parser.add_argument('--cfg', type=str, default=ROOT / 'ultralytics/cfg/models/v8/yolov8.yaml', help='Model configuration path')
     parser.add_argument('--model-size', type=str, default='s', help='YOLOv8 model size (e.g., s, m, l, x)')
-    parser.add_argument('--prune-ratio', type=float, default=0.7, help='Prune ratio')
+    parser.add_argument('--prune-ratio', type=float, default=0.5, help='Prune ratio')
     parser.add_argument('--save-dir', type=str, default=ROOT / 'weights', help='Directory to save pruned model weights')
     opt = parser.parse_args()
     return opt
 
 ```
 
-#### Key Parameters:
+#### 需要调整的参数:
 
-- `--data` and `--weights`: Paths to your dataset and trained weights.
-- `--prune-ratio`: Proportion of channels to prune.
-- `--save-dir`: Directory to save the pruned model (`prune.pt`).
+- `--data` 和 `--weights`：数据集和已训练权重的路径。
+- `--prune-ratio`：要剪枝的通道比例。
+- `--save-dir`：保存剪枝后模型（`prune.pt`）的目录。
 
 ------
 
-### Step 4: Fine-Tuning
+### 4. 微调
 
-Use `finetune.py` for fine-tuning the pruned model:
+运行 `finetune.py` 微调剪枝后的模型:
 
 ```
 from ultralytics import YOLO
 
 model = YOLO("weights/pruned.pt")  # Load pruned model
 # Enable fine-tuning
-model.train(data="ultralytics/cfg/datasets/coco.yaml", epochs=200, finetune=True)
+model.train(data="ultralytics/cfg/datasets/NWPU.yaml", epochs=200, finetune=True)
 
 ```
 
 ------
 
-## Results
+## 结果
 
-Using YOLOv8s on a single-category dataset:
+在NWPU数据集上运行 YOLOv8m 模型:
 
 | **Prune Ratio** | **Parameters** | **GFLOPs** | **mAP50** | **Inference Speed** |
 | --------------- | -------------- | ---------- | --------- | ------------------- |
 | 0%              | 11.1M          | 28.4       | 0.964     | 1.6ms               |
-| 20%             | 7.5M           | 20.2       | 0.969     | 1.5ms               |
-| 40%             | 4.7M           | 15.3       | 0.972     | 1.2ms               |
-| 60%             | 3.0M           | 11.3       | 0.964     | 1.1ms               |
+| 50%             | 7.5M           | 20.2       | 0.969     | 1.5ms               |
+
+![模型剪枝前的PR](assets/original/PR_curve.png)
+![模型剪枝后的PR](assets/pruned/PR_curve.png)
+
+![模型剪枝前的混淆矩阵](assets/original/confusion_matrix_normalized.png)
+![模型剪枝后的混淆矩阵](assets/pruned/confusion_matrix_normalized.png)
+
+### 模型剪枝前后目标检测对比
+![模型剪枝前](assets/original/val_batch0_pred.jpg)
+![模型剪枝后](assets/pruned/val_batch0_pred.jpg)
 
 ------
 
-## Notes
+![模型剪枝前](assets/original/val_batch1_pred.jpg)
+![模型剪枝后](assets/pruned/val_batch1_pred.jpg)
 
-1. Disable **AMP**, **scaler**, and **grad_clip_norm** during sparsity training.
-2. Search for `===========` in the codebase to locate modifications.
+------
 
-## TODO
+![模型剪枝前](assets/original/val_batch2_pred.jpg)
+![模型剪枝后](assets/pruned/val_batch2_pred.jpg)
 
-- Address multi-GPU (DDP) issues during sparsity training.
+------
 
-Reference: [YOLOv5 Prune](https://github.com/midasklr/yolov5prune)
+## 注意
+
+在稀疏训练期间禁用 **AMP**、**scaler** 和 **grad_clip_norm**。
+
+
+
+Reference: [YOLOv5 Prune](https://github.com/midasklr/yolov5prune)  [YOLOv8s Prune](https://github.com/JasonSloan/yolov8-prune)
