@@ -186,32 +186,41 @@ model.train(data="ultralytics/cfg/datasets/NWPU.yaml", epochs=200, finetune=True
 | 50%             | 9.5M           | 12.1       | 0.894     | 3.9ms               |
 | 0%              | 25.9M          | 39.7       | 0.951     | 4.2ms               |
 
-![模型剪枝前的PR](assets/original/PR_curve.png)
 **模型剪枝前的PR曲线**
-![模型剪枝后的PR](assets/pruned/PR_curve.png)
+![模型剪枝前的PR](assets/original/PR_curve.png)
 **模型剪枝后的PR曲线**
+![模型剪枝后的PR](assets/pruned/PR_curve.png)
 
 ------
 
-![模型剪枝前的混淆矩阵](assets/original/confusion_matrix_normalized.png)
 **模型剪枝前的混淆矩阵**
-![模型剪枝后的混淆矩阵](assets/pruned/confusion_matrix_normalized.png)
+![模型剪枝前的混淆矩阵](assets/original/confusion_matrix_normalized.png)
 **模型剪枝后的混淆矩阵**
+![模型剪枝后的混淆矩阵](assets/pruned/confusion_matrix_normalized.png)
 
 ------
 
 ### 模型剪枝前后目标检测对比
+***图1***
+**原始模型**
 ![模型剪枝前](assets/original/val_batch0_pred.jpg)
+**蒸馏模型**
 ![模型剪枝后](assets/pruned/val_batch0_pred.jpg)
 
 ------
 
+***图2***
+**原始模型**
 ![模型剪枝前](assets/original/val_batch1_pred.jpg)
+**蒸馏模型**
 ![模型剪枝后](assets/pruned/val_batch1_pred.jpg)
 
 ------
 
+***图3***
+**原始模型**
 ![模型剪枝前](assets/original/val_batch2_pred.jpg)
+**蒸馏模型**
 ![模型剪枝后](assets/pruned/val_batch2_pred.jpg)
 
 ------
