@@ -129,10 +129,13 @@ model.train(
 1. 设置一个非零的 `sr` 值以强制稀疏性。更大的 `sr` 值会增强剪枝强度。
 
 2. 使用 `vis-bn-weight.py` 可视化稀疏训练前后gamma分布的情况。
+
 **常规训练**
+
    ![常规训练](assets/bn-weight-distribution-normal.jpg)
    
 **稀疏训练**
+
    ![稀疏训练](assets/bn-weight-distribution-sparsity.jpg)
 
 ------
@@ -202,26 +205,39 @@ model.train(data="ultralytics/cfg/datasets/NWPU.yaml", epochs=200, finetune=True
 ------
 
 ### 模型剪枝前后目标检测对比
+
 ***图1***
+
 **原始模型**
+
 ![模型剪枝前](assets/original/val_batch0_pred.jpg)
+
 **蒸馏模型**
+
 ![模型剪枝后](assets/pruned/val_batch0_pred.jpg)
 
 ------
 
 ***图2***
+
 **原始模型**
+
 ![模型剪枝前](assets/original/val_batch1_pred.jpg)
+
 **蒸馏模型**
+
 ![模型剪枝后](assets/pruned/val_batch1_pred.jpg)
 
 ------
 
 ***图3***
+
 **原始模型**
+
 ![模型剪枝前](assets/original/val_batch2_pred.jpg)
+
 **蒸馏模型**
+
 ![模型剪枝后](assets/pruned/val_batch2_pred.jpg)
 
 ------
