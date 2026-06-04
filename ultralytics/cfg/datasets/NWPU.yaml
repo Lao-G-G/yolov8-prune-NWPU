@@ -1,0 +1,18 @@
+path: ./dataset/NWPU
+train: train/images
+val: val/images
+test: test/images
+
+nc: 10
+names: [
+  'airplane',
+  'ship',
+  'storage_tank',
+  'baseball_diamond',
+  'tennis_court',
+  'basketball_court',
+  'ground_track_field',
+  'harbor',
+  'bridge',
+  'vehicle'
+]
