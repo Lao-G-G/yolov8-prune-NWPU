@@ -183,7 +183,7 @@ model.train(data="ultralytics/cfg/datasets/NWPU.yaml", epochs=200, finetune=True
 
 ## 结果
 
-在NWPU数据集上运行 YOLOv8m 模型:
+在NWPU数据集上运行 YOLOv8m 模型(4090D):
 
 | **Prune Ratio** | **Parameters** | **GFLOPs** | **mAP50** | **Inference Speed** |
 | --------------- | -------------- | ---------- | --------- | ------------------- |
